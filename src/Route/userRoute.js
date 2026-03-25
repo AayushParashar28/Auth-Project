@@ -2,6 +2,10 @@ const express = require("express");
 const userController = require("../Controller/userController");
 const { loginLimiter, signupLimiter } = require("../utils/rateLimiter");
 const authMiddleware = require("../middlewares/authmiddleware");
+const {
+  validateSignup,
+  validatelogin,
+} = require("../middlewares/validationMiddleware");
 
 const userRouter = express.Router();
 
@@ -32,7 +36,12 @@ const userRouter = express.Router();
  *       400:
  *         description: Bad request
  */
-userRouter.post("/signup", signupLimiter, userController.signup);
+userRouter.post(
+  "/signup",
+  signupLimiter,
+  validateSignup,
+  userController.signup,
+);
 
 /**
  * @swagger
@@ -142,7 +151,7 @@ userRouter.delete("/deletebyemail", userController.deleteuserbyId);
  *       400:
  *         description: Invalid credentials
  */
-userRouter.post("/login", loginLimiter, userController.login);
+userRouter.post("/login", loginLimiter, validatelogin, userController.login);
 
 /**
  * @swagger
