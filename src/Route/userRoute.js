@@ -1,6 +1,7 @@
 const express = require("express");
 const userController = require("../Controller/userController");
 const { loginLimiter, signupLimiter } = require("../utils/rateLimiter");
+const authMiddleware = require("../middlewares/authmiddleware");
 
 const userRouter = express.Router();
 
@@ -68,7 +69,7 @@ userRouter.post("/checkotp", userController.checkOTP);
  *       200:
  *         description: List of all users
  */
-userRouter.get("/user", userController.user);
+userRouter.get("/user", authMiddleware, userController.user);
 
 /**
  * @swagger
