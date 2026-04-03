@@ -178,4 +178,78 @@ userRouter.post("/login", loginLimiter, validatelogin, userController.login);
  */
 userRouter.post("/verifylogin", userController.verifyOTP);
 
+/**
+ * @swagger
+ * /forgotpassword:
+ *   post:
+ *     summary: Send OTP for password reset
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: OTP sent to email
+ *       404:
+ *         description: User not found
+ */
+userRouter.post("/forgotpassword", userController.forgetPassword);
+
+/**
+ * @swagger
+ * /verifyresetotp:
+ *   post:
+ *     summary: Verify OTP for password reset
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               otp:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: OTP verified successfully
+ *       400:
+ *         description: Invalid or expired OTP
+ */
+userRouter.post("/verifyresetotp", userController.verifyResetOTP);
+
+/**
+ * @swagger
+ * /resetpassword:
+ *   post:
+ *     summary: Reset password after OTP verification
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               Password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       400:
+ *         description: Same as old password or OTP not verified
+ */
+userRouter.post("/resetpassword", userController.resetPassword);
+
 module.exports = userRouter;
+

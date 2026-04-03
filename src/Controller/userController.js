@@ -93,6 +93,154 @@ exports.checkOTP = async (req, res) => {
   }
 };
 
+exports.forgetPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        msg: "Email is required",
+      });
+    }
+
+    const user = await userModel.findOne({ email: email });
+    if (!user) {
+      return res.status(404).json({
+        msg: "User not found",
+      });
+    }
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+    await userModel.updateOne(
+      { email: email },
+      { $set: { otp: otp, otpExpiry: otpExpiry } }
+    );
+
+    await sendOTP(email, otp);
+
+    return res.status(200).json({
+      success: true,
+      msg: "OTP sent to your email",
+    });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      msg: "Internal Server error",
+    });
+  }
+}
+
+exports.verifyResetOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        msg: "Email and OTP are required",
+      });
+    }
+
+    const user = await userModel.findOne({ email: email });
+    if (!user) {
+      return res.status(404).json({
+        msg: "User not found",
+      });
+    }
+
+    if (user.otp !== otp) {
+      return res.status(400).json({
+        msg: "Invalid OTP",
+      });
+    }
+
+    if (user.otpExpiry < new Date()) {
+      return res.status(400).json({
+        msg: "OTP expired please try again",
+      });
+    }
+
+    // Mark OTP as verified
+    await userModel.updateOne(
+      { email: email },
+      { $set: { otp: null, otpExpiry: null, isResetVerified: true } }
+    );
+
+    return res.status(200).json({
+      success: true,
+      msg: "OTP verified! Now reset your password",
+    });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      msg: "Internal Server error",
+    });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, Password } = req.body;
+
+    if (!email || !Password) {
+      return res.status(400).json({
+        msg: "Email and Password are required",
+      });
+    }
+
+    const user = await userModel.findOne({ email: email });
+    if (!user) {
+      return res.status(404).json({
+        msg: "User not found",
+      });
+    }
+
+    // Check if OTP was verified
+    if (!user.isResetVerified) {
+      return res.status(400).json({
+        msg: "Please verify OTP first",
+      });
+    }
+
+    const isSamePassword = passwordhelper.decodepassword(Password, user.Password);
+    if (isSamePassword) {
+      return res.status(400).json({
+        success: false,
+        msg: "New password cannot be same as old password",
+      });
+    }
+
+    // Hash new password
+    const salt = passwordhelper.genratesalt();
+    const hashedPassword = passwordhelper.hashpassword(Password, salt);
+
+    await userModel.updateOne(
+      { email: email },
+      { $set: { 
+          Password: hashedPassword, 
+          salt: salt,
+          isResetVerified: false 
+        } 
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      msg: "Password reset successfully! You can now login.",
+    });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      msg: "Internal Server error",
+    });
+  }
+};
+
 exports.user = async (req, res) => {
   try {
     const user = await userModel.find();
